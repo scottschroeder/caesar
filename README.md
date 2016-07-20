@@ -4,7 +4,7 @@ This is a toy project to get familiar with rust, and rust tooling.
 
 _Note: this is actually the Vigenère cipher_
 
-h2. Requirements/Goals
+## Requirements/Goals
 * Encrypt/Decrypt plaintext into/from ciphertext
   * Support for multiple encodings
 * Perform frequency analysis to break ciphertext
@@ -13,7 +13,7 @@ h2. Requirements/Goals
 * Complete Documentation
 * Test coverage where appropriate
 
-h2. Current Status
+## Current Status
 
 * Very basic encrypt/decrypt working.
   * Only operates on `a-zA-Z`

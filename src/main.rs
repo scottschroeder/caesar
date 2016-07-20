@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate itertools;
 use itertools::Itertools;
 
@@ -62,7 +65,7 @@ fn transform_message(message: &String, keytext: &String, action: Action) -> Stri
             }
             let x = m + shift as u8;
             let c = number_to_char(&x);
-            // println!("{}: {} +/- {} = {}", i, m, shift, c);
+            trace!("{}: {} +/- {} = {}", i, m, shift, c);
             c
         })
         .join("")
@@ -70,6 +73,10 @@ fn transform_message(message: &String, keytext: &String, action: Action) -> Stri
 
 
 fn main() {
+    env_logger::init().unwrap();
+
+    info!("starting up");
+
     let s: String = "abc Hello, World! xyz".to_string();
     let k: String = "This is my key".to_string();
     println!("Raw Message: {}", s);
