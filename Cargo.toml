@@ -1,0 +1,7 @@
+[package]
+name = "caesar"
+version = "0.1.0"
+authors = ["Scott Schroeder <scott19904@gmail.com>"]
+
+[dependencies]
+itertools = "0.4.16"
