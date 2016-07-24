@@ -1,6 +1,9 @@
-#[macro_use] extern crate log;
-#[macro_use] extern crate custom_derive;
-#[macro_use] extern crate newtype_derive;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate custom_derive;
+#[macro_use]
+extern crate newtype_derive;
 extern crate env_logger;
 extern crate itertools;
 use itertools::Itertools;
@@ -25,7 +28,11 @@ fn vectorize_string(s: &String, encoding: &Encoding) -> Vec<EncodeNum> {
 }
 
 
-fn transform_message(message: &String, keytext: &String, action: Action, encoding: &Encoding) -> String {
+fn transform_message(message: &String,
+                     keytext: &String,
+                     action: Action,
+                     encoding: &Encoding)
+                     -> String {
     let key: Vec<EncodeNum> = vectorize_string(keytext, encoding);
     let keysize = key.len();
     message.chars()
@@ -34,7 +41,11 @@ fn transform_message(message: &String, keytext: &String, action: Action, encodin
             let message_num: EncodeNum = encoding.char_to_number(&c);
             let key_num: EncodeNum = key[i % keysize];
             let cipher_num = transform(&message_num, &key_num, &encoding.len(), &action);
-            trace!("message_num: {:?} key_num: {:?} {:?} -> {:?}", message_num, key_num, action, cipher_num);
+            trace!("message_num: {:?} key_num: {:?} {:?} -> {:?}",
+                   message_num,
+                   key_num,
+                   action,
+                   cipher_num);
             encoding.number_to_char(&cipher_num)
         })
         .join("")

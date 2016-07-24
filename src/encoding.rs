@@ -1,5 +1,7 @@
-#[macro_use] use custom_derive;
-#[macro_use] use newtype_derive;
+#[macro_use]
+use custom_derive;
+#[macro_use]
+use newtype_derive;
 
 use std::collections::HashMap;
 use std::fmt;
@@ -49,13 +51,12 @@ pub struct Encoding {
 }
 
 impl Encoding {
-
     pub fn new() -> Encoding {
         Encoding {
             char_number_map: HashMap::new(),
             number_char_map: HashMap::new(),
             char_char_map: HashMap::new(),
-            size: 0
+            size: 0,
         }
     }
 
@@ -89,7 +90,6 @@ impl Encoding {
     pub fn map_char(&self, c: &char) -> char {
         *self.char_char_map.get(c).unwrap_or(c)
     }
-
 }
 
 
