@@ -1,8 +1,3 @@
-#[macro_use]
-use custom_derive;
-#[macro_use]
-use newtype_derive;
-
 use std::collections::HashMap;
 use std::fmt;
 
@@ -106,7 +101,7 @@ pub fn short_abc() -> Encoding {
 
 #[test]
 fn create_empty_encoding() {
-    let mut e = Encoding::new();
+    let e = Encoding::new();
     assert_eq!(e.size, 0);
     assert_eq!(e.char_number_map.len(), 0);
     assert_eq!(e.number_char_map.len(), 0);
