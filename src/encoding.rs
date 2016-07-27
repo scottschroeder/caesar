@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::convert::TryFrom;
 use toml::{self, Array, Value, Table};
+
 
 
 const ALPHANUMERIC: &'static str = r#"
@@ -74,6 +76,9 @@ const ALPHANUMERIC: &'static str = r#"
 
 
 #[derive(Debug)]
+pub struct TryFromTomlError(String);
+
+#[derive(Debug)]
 pub enum Action {
     Encrypt,
     Decrypt,
@@ -132,20 +137,12 @@ fn char_from_toml_value(value: &Value) -> char {
     }
 }
 
-impl Encoding {
-    pub fn new() -> Self {
-        Encoding {
-            char_number_map: HashMap::new(),
-            number_char_map: HashMap::new(),
-            char_char_map: HashMap::new(),
-            size: 0,
-        }
-    }
+impl TryFrom<toml::Table> for Encoding {
+    type Err = TryFromTomlError;
 
-    fn new_from_toml(toml: &str) -> Self {
+    fn try_from(root_table: toml::Table) -> Result<Encoding, TryFromTomlError> {
         // TODO Error handling
         let mut new_encoding = Self::new();
-        let root_table: Table = toml::Parser::new(toml).parse().unwrap();
         trace!("Root Table: {:?}", root_table);
         let alphabet = match root_table.get("alphabet") {
             Some(&Value::Array(ref abc)) => abc,
@@ -169,7 +166,23 @@ impl Encoding {
             new_encoding.insert_map(pre_char, post_char);
         }
 
-        new_encoding
+        Ok(new_encoding)
+    }
+}
+
+impl Encoding {
+    pub fn new() -> Self {
+        Encoding {
+            char_number_map: HashMap::new(),
+            number_char_map: HashMap::new(),
+            char_char_map: HashMap::new(),
+            size: 0,
+        }
+    }
+
+    fn new_from_toml(toml: &str) -> Self {
+        let root_table: Table = toml::Parser::new(toml).parse().unwrap();
+        Encoding::try_from(root_table).unwrap()
     }
 
     pub fn len(&self) -> usize {
