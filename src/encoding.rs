@@ -1,5 +1,77 @@
 use std::collections::HashMap;
 use std::fmt;
+use toml::{self, Array, Value, Table};
+
+
+const ALPHANUMERIC: &'static str = r#"
+        alphabet =[
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+            "j",
+            "k",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "q",
+            "r",
+            "s",
+            "t",
+            "u",
+            "v",
+            "w",
+            "x",
+            "y",
+            "z",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "0",
+            " ",
+        ]
+        [mapping]
+        A = "a"
+        B = "b"
+        C = "c"
+        D = "d"
+        E = "e"
+        F = "f"
+        G = "g"
+        H = "h"
+        I = "i"
+        J = "j"
+        K = "k"
+        L = "l"
+        M = "m"
+        N = "n"
+        O = "o"
+        P = "p"
+        Q = "q"
+        R = "r"
+        S = "s"
+        T = "t"
+        U = "u"
+        V = "v"
+        W = "w"
+        X = "x"
+        Y = "y"
+        Z = "z"
+    "#;
+
 
 #[derive(Debug)]
 pub enum Action {
@@ -8,7 +80,8 @@ pub enum Action {
 }
 
 custom_derive! {
-    #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash, NewtypeFrom, NewtypeAdd, NewtypeSub, NewtypeRem)]
+    #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+    #[derive(NewtypeFrom, NewtypeAdd, NewtypeSub, NewtypeRem)]
     pub struct EncodeNum(u64);
 }
 
@@ -45,14 +118,49 @@ pub struct Encoding {
     size: usize,
 }
 
+fn char_from_toml_value(value: &Value) -> char {
+    match value {
+        &Value::String(ref s) => {
+            if s.len() != 1 {
+                panic!("Invalid config, key 'alphabet' has bad char value");
+            } else {
+                let c: char = s.chars().nth(0).unwrap();
+                c
+            }
+        }
+        _ => panic!("Invaid config, key 'alphabet' had non string value."),
+    }
+}
+
 impl Encoding {
-    pub fn new() -> Encoding {
+    pub fn new() -> Self {
         Encoding {
             char_number_map: HashMap::new(),
             number_char_map: HashMap::new(),
             char_char_map: HashMap::new(),
             size: 0,
         }
+    }
+
+    fn new_from_toml(toml: &str) -> Self {
+        // TODO Error handling
+        let mut new_encoding = Self::new();
+        let root_table: Table = toml::Parser::new(toml).parse().unwrap();
+        trace!("Root Table: {:?}", root_table);
+        let alphabet = match root_table.get("alphabet") {
+            Some(&Value::Array(ref abc)) => abc,
+            _ => panic!("Invaid config, key 'alphabet' did not have array."),
+        };
+        let chars: Vec<char> = alphabet.iter()
+            .map(|x| char_from_toml_value(x))
+            .collect();
+        for c in &chars {
+            new_encoding.insert_char(*c);
+        }
+
+
+
+        new_encoding
     }
 
     pub fn len(&self) -> usize {
@@ -99,6 +207,12 @@ pub fn short_abc() -> Encoding {
     e
 }
 
+
+pub fn alphanumeric() -> Encoding {
+    let alphanumeric_encoding: Encoding = Encoding::new_from_toml(ALPHANUMERIC);
+    println!("Alphanumeric Encoding {:?}", alphanumeric_encoding);
+    alphanumeric_encoding
+}
 #[test]
 fn create_empty_encoding() {
     let e = Encoding::new();

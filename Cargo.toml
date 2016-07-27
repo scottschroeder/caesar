@@ -4,8 +4,9 @@ version = "0.1.0"
 authors = ["Scott Schroeder <scott19904@gmail.com>"]
 
 [dependencies]
+custom_derive = "0.1.5"
+env_logger = "0.3"
 itertools = "0.4.16"
 log = "0.3"
-env_logger = "0.3"
-custom_derive = "0.1.5"
 newtype_derive = "0.1.6"
+toml = "0.1"

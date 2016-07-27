@@ -6,13 +6,10 @@ extern crate custom_derive;
 extern crate newtype_derive;
 extern crate env_logger;
 extern crate itertools;
+extern crate toml;
 use itertools::Itertools;
 mod encoding;
 use encoding::{Action, Encoding, EncodeNum, transform};
-
-
-
-
 
 fn reduce_string(s: &String, encoding: &Encoding) -> String {
     s.chars()
@@ -57,11 +54,13 @@ fn main() {
 
     info!("starting up");
 
-    let encoding = encoding::short_abc();
+    let encoding = encoding::alphanumeric();
     println!("{:?}", encoding);
 
     let s: String = "AaBbCc".to_string();
     let k: String = "cab".to_string();
+    let s: String = "abc Hello, World! xyz".to_string();
+    let k: String = "This is a key".to_string();
     let message = reduce_string(&s, &encoding);
     let keytext = reduce_string(&k, &encoding);
     println!("Message {}", message);
