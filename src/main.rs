@@ -59,7 +59,7 @@ fn main() {
 
     let s: String = "AaBbCc".to_string();
     let k: String = "cab".to_string();
-    let s: String = "abc Hello, World! xyz".to_string();
+    let s: String = "abc Hello, World123! xyz".to_string();
     let k: String = "This is a key".to_string();
     let message = reduce_string(&s, &encoding);
     let keytext = reduce_string(&k, &encoding);

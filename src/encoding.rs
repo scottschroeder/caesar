@@ -158,7 +158,16 @@ impl Encoding {
             new_encoding.insert_char(*c);
         }
 
-
+        let char_mapping = match root_table.get("mapping") {
+            Some(&Value::Table(ref mapping)) => mapping,
+            _ => panic!("Invaid config, key 'mapping' did not have Table."),
+        };
+        trace!("char mapping: {:?}", char_mapping);
+        for (pre_map, post_map) in char_mapping {
+            let pre_char = pre_map.chars().nth(0).unwrap();
+            let post_char = char_from_toml_value(post_map);
+            new_encoding.insert_map(pre_char, post_char);
+        }
 
         new_encoding
     }
@@ -171,7 +180,7 @@ impl Encoding {
         let map_number = EncodeNum(self.size as u64);
         self.char_number_map.insert(c, map_number);
         self.number_char_map.insert(map_number, c);
-        self.size = self.size + 1;
+        self.size += 1;
     }
 
     pub fn insert_map(&mut self, x: char, y: char) {
@@ -213,6 +222,7 @@ pub fn alphanumeric() -> Encoding {
     println!("Alphanumeric Encoding {:?}", alphanumeric_encoding);
     alphanumeric_encoding
 }
+
 #[test]
 fn create_empty_encoding() {
     let e = Encoding::new();
