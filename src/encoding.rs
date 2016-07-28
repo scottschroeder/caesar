@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::convert::TryFrom;
-use toml::{self, Array, Value, Table};
+use toml::{self, Value, Table};
+use itertools::Itertools;
 
 
 
@@ -79,7 +80,7 @@ const ALPHANUMERIC: &'static str = r#"
 pub struct TryFromTomlError(String);
 
 #[derive(Debug)]
-pub enum Action {
+enum Action {
     Encrypt,
     Decrypt,
 }
@@ -90,13 +91,7 @@ custom_derive! {
     pub struct EncodeNum(u64);
 }
 
-impl fmt::Display for EncodeNum {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-pub fn transform(message: &EncodeNum, key: &EncodeNum, size: &usize, action: &Action) -> EncodeNum {
+fn transform(message: &EncodeNum, key: &EncodeNum, size: &usize, action: &Action) -> EncodeNum {
     let s = *size as i32;
     let m = message.0 as i32;
     let k = key.0 as i32;
@@ -114,6 +109,13 @@ pub fn transform(message: &EncodeNum, key: &EncodeNum, size: &usize, action: &Ac
 
     EncodeNum(cipher_num as u64)
 }
+
+impl fmt::Display for EncodeNum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 
 #[derive(Debug)]
 pub struct Encoding {
@@ -180,13 +182,9 @@ impl Encoding {
         }
     }
 
-    fn new_from_toml(toml: &str) -> Self {
+    pub fn new_from_toml_string(toml: &str) -> Self {
         let root_table: Table = toml::Parser::new(toml).parse().unwrap();
         Encoding::try_from(root_table).unwrap()
-    }
-
-    pub fn len(&self) -> usize {
-        self.size
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -200,20 +198,61 @@ impl Encoding {
         self.char_char_map.insert(x, y);
     }
 
-    pub fn char_in_working_set(&self, c: &char) -> bool {
+    fn char_in_working_set(&self, c: &char) -> bool {
         self.char_number_map.contains_key(c)
     }
 
-    pub fn char_to_number(&self, c: &char) -> EncodeNum {
+    fn char_to_number(&self, c: &char) -> EncodeNum {
         *self.char_number_map.get(c).unwrap()
     }
 
-    pub fn number_to_char(&self, n: &EncodeNum) -> char {
+    fn number_to_char(&self, n: &EncodeNum) -> char {
         *self.number_char_map.get(n).unwrap()
     }
 
-    pub fn map_char(&self, c: &char) -> char {
+    fn map_char(&self, c: &char) -> char {
         *self.char_char_map.get(c).unwrap_or(c)
+    }
+
+    fn vectorize_string(&self, s: &String) -> Vec<EncodeNum> {
+        s.chars()
+            .map(|c| self.char_to_number(&c))
+            .collect()
+    }
+
+    pub fn encrypt(&self, message: &String, keytext: &String) -> String {
+        self.transform_message(message, keytext, Action::Encrypt)
+    }
+
+    pub fn decrypt(&self, message: &String, keytext: &String) -> String {
+        self.transform_message(message, keytext, Action::Decrypt)
+    }
+
+    fn transform_message(&self, message: &String, keytext: &String, action: Action) -> String {
+        let key: Vec<EncodeNum> = self.vectorize_string(keytext);
+        let keysize = key.len();
+        message.chars()
+            .enumerate()
+            .map(|(i, c)| {
+                let message_num: EncodeNum = self.char_to_number(&c);
+                let key_num: EncodeNum = key[i % keysize];
+                let cipher_num = transform(&message_num, &key_num, &self.size, &action);
+                trace!("message_num: {:?} key_num: {:?} {:?} -> {:?}",
+                       message_num,
+                       key_num,
+                       action,
+                       cipher_num);
+                self.number_to_char(&cipher_num)
+            })
+            .join("")
+    }
+
+
+    pub fn reduce_string(&self, s: &String) -> String {
+        s.chars()
+            .map(|c| self.map_char(&c))
+            .filter(|c| self.char_in_working_set(&c))
+            .join("")
     }
 }
 
@@ -231,7 +270,7 @@ pub fn short_abc() -> Encoding {
 
 
 pub fn alphanumeric() -> Encoding {
-    let alphanumeric_encoding: Encoding = Encoding::new_from_toml(ALPHANUMERIC);
+    let alphanumeric_encoding: Encoding = Encoding::new_from_toml_string(ALPHANUMERIC);
     println!("Alphanumeric Encoding {:?}", alphanumeric_encoding);
     alphanumeric_encoding
 }
@@ -284,4 +323,86 @@ fn decode() {
     let mut e = Encoding::new();
     e.insert_char('a');
     assert_eq!(e.number_to_char(&EncodeNum(0)), 'a')
+}
+
+#[test]
+fn transform_num_simple_add() {
+    let m = EncodeNum(2);
+    let k = EncodeNum(3);
+    let c = EncodeNum(5);
+    let abc_size: usize = 100;
+    assert_eq!(transform(&m, &k, &abc_size, &Action::Encrypt), c)
+}
+
+#[test]
+fn transform_num_simple_sub() {
+    let m = EncodeNum(2);
+    let k = EncodeNum(3);
+    let c = EncodeNum(5);
+    let abc_size: usize = 100;
+    assert_eq!(transform(&c, &k, &abc_size, &Action::Decrypt), m)
+}
+
+
+#[test]
+fn transform_num_wrapping_add() {
+    let m = EncodeNum(2);
+    let k = EncodeNum(3);
+    let c = EncodeNum(1);
+    let abc_size: usize = 4;
+    assert_eq!(transform(&m, &k, &abc_size, &Action::Encrypt), c)
+}
+
+#[test]
+fn transform_num_wrapping_sub() {
+    let m = EncodeNum(2);
+    let k = EncodeNum(3);
+    let c = EncodeNum(1);
+    let abc_size: usize = 4;
+    assert_eq!(transform(&c, &k, &abc_size, &Action::Decrypt), m)
+}
+
+#[test]
+fn transform_char_identity() {
+    let mut e = Encoding::new();
+    e.insert_char('a');
+    e.insert_char('b');
+    let m = "b".to_string();
+    let k = "a".to_string();
+    let c = "b".to_string();
+
+    assert_eq!(e.transform_message(&m, &k, Action::Encrypt), c);
+    assert_eq!(e.transform_message(&c, &k, Action::Decrypt), m);
+
+}
+
+#[test]
+fn transform_char() {
+    let mut e = Encoding::new();
+    e.insert_char('a');
+    e.insert_char('b');
+    e.insert_char('c');
+    e.insert_char('d');
+    let m = "b".to_string();
+    let k = "c".to_string();
+    let c = "d".to_string();
+
+    assert_eq!(e.transform_message(&m, &k, Action::Encrypt), c);
+    assert_eq!(e.transform_message(&c, &k, Action::Decrypt), m);
+
+}
+
+#[test]
+fn encrypt_decrypt() {
+    let mut e = Encoding::new();
+    e.insert_char('a');
+    e.insert_char('b');
+    e.insert_char('c');
+    e.insert_char('d');
+    let m = "add".to_string();
+    let k = "bad".to_string();
+    let c = "bdc".to_string();
+
+    assert_eq!(e.encrypt(&m, &k), c);
+    assert_eq!(e.decrypt(&c, &k), m);
 }
