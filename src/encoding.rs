@@ -6,76 +6,6 @@ use itertools::Itertools;
 
 
 
-const ALPHANUMERIC: &'static str = r#"
-        alphabet =[
-            "a",
-            "b",
-            "c",
-            "d",
-            "e",
-            "f",
-            "g",
-            "h",
-            "i",
-            "j",
-            "k",
-            "l",
-            "m",
-            "n",
-            "o",
-            "p",
-            "q",
-            "r",
-            "s",
-            "t",
-            "u",
-            "v",
-            "w",
-            "x",
-            "y",
-            "z",
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "0",
-            " ",
-        ]
-        [mapping]
-        A = "a"
-        B = "b"
-        C = "c"
-        D = "d"
-        E = "e"
-        F = "f"
-        G = "g"
-        H = "h"
-        I = "i"
-        J = "j"
-        K = "k"
-        L = "l"
-        M = "m"
-        N = "n"
-        O = "o"
-        P = "p"
-        Q = "q"
-        R = "r"
-        S = "s"
-        T = "t"
-        U = "u"
-        V = "v"
-        W = "w"
-        X = "x"
-        Y = "y"
-        Z = "z"
-    "#;
-
-
 #[derive(Debug)]
 pub struct TryFromTomlError(String);
 
@@ -247,12 +177,22 @@ impl Encoding {
             .join("")
     }
 
-
-    pub fn reduce_string(&self, s: &String) -> String {
+    pub fn map_string(&self, s: &String) -> String {
         s.chars()
             .map(|c| self.map_char(&c))
+            .join("")
+    }
+
+    pub fn filter_string(&self, s: &String) -> String {
+        s.chars()
             .filter(|c| self.char_in_working_set(&c))
             .join("")
+    }
+
+    pub fn map_filter_string(&self, s: &String) -> String {
+        let mapped_string = self.map_string(s);
+        let filtered_string = self.filter_string(&mapped_string);
+        filtered_string
     }
 }
 
@@ -269,11 +209,6 @@ pub fn short_abc() -> Encoding {
 }
 
 
-pub fn alphanumeric() -> Encoding {
-    let alphanumeric_encoding: Encoding = Encoding::new_from_toml_string(ALPHANUMERIC);
-    println!("Alphanumeric Encoding {:?}", alphanumeric_encoding);
-    alphanumeric_encoding
-}
 
 #[test]
 fn create_empty_encoding() {
@@ -405,4 +340,24 @@ fn encrypt_decrypt() {
 
     assert_eq!(e.encrypt(&m, &k), c);
     assert_eq!(e.decrypt(&c, &k), m);
+}
+
+#[test]
+fn map_string() {
+    let mut e = Encoding::new();
+    e.insert_char('a');
+    e.insert_map('A', 'a');
+    let pre = "aAa".to_string();
+    let post = "aaa".to_string();
+    assert_eq!(e.map_string(&pre), post);
+}
+
+fn fiter_string() {
+    let mut e = Encoding::new();
+    e.insert_char('a');
+    e.insert_char('b');
+    e.insert_map('A', 'a');
+    let pre = "Abc".to_string();
+    let post = "b".to_string();
+    assert_eq!(e.filter_string(&pre), post);
 }
