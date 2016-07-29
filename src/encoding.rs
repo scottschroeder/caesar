@@ -56,8 +56,8 @@ pub struct Encoding {
 }
 
 fn char_from_toml_value(value: &Value) -> char {
-    match value {
-        &Value::String(ref s) => {
+    match *value {
+        Value::String(ref s) => {
             if s.len() != 1 {
                 panic!("Invalid config, key 'alphabet' has bad char value");
             } else {
@@ -195,19 +195,6 @@ impl Encoding {
         filtered_string
     }
 }
-
-
-pub fn short_abc() -> Encoding {
-    let mut e = Encoding::new();
-    e.insert_char('a');
-    e.insert_char('b');
-    e.insert_char('c');
-    e.insert_map('A', 'a');
-    e.insert_map('B', 'b');
-    e.insert_map('C', 'c');
-    e
-}
-
 
 
 #[test]
@@ -352,7 +339,8 @@ fn map_string() {
     assert_eq!(e.map_string(&pre), post);
 }
 
-fn fiter_string() {
+#[test]
+fn filter_string() {
     let mut e = Encoding::new();
     e.insert_char('a');
     e.insert_char('b');
