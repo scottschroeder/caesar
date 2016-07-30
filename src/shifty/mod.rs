@@ -2,6 +2,7 @@ use std;
 
 mod error;
 mod encoding;
+mod parser;
 
 pub use self::encoding::Encoding;
 pub use self::error::Error;
