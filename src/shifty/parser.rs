@@ -106,7 +106,7 @@ pub fn read_toml_string(toml: &str) -> super::Result<Table> {
 #[cfg(test)]
 mod tests {
     use super::super::Error;
-    use super::super::ConfigError;
+    use super::super::error::ConfigError;
     use super::super::Encoding;
 
     #[test]

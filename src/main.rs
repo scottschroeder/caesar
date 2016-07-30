@@ -55,8 +55,6 @@ fn alphanumeric() -> Encoding {
 
 fn main() {
     env_logger::init().unwrap();
-
-
     let encoding = alphanumeric();
 
     let s: String = "abc Hello, World123! xyz".to_string();
