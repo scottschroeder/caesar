@@ -78,4 +78,3 @@ impl error::Error for ConfigError {
         }
     }
 }
-

@@ -85,17 +85,16 @@ impl Encoding {
     }
 
     fn char_to_number(&self, c: &char) -> Result<EncodeNum> {
-        //*self.char_number_map.get(c).unwrap()
         match self.char_number_map.get(c) {
             Some(n) => Ok(*n),
-            None => Err(Error::CharNotInEncoding(*c))
+            None => Err(Error::CharNotInEncoding(*c)),
         }
     }
 
     fn number_to_char(&self, n: &EncodeNum) -> Result<char> {
         match self.number_char_map.get(n) {
             Some(c) => Ok(*c),
-            None => Err(Error::NumberNotInEncoding(*n))
+            None => Err(Error::NumberNotInEncoding(*n)),
         }
     }
 
@@ -117,7 +116,11 @@ impl Encoding {
         self.transform_message(message, keytext, Action::Decrypt)
     }
 
-    fn transform_message(&self, message: &String, keytext: &String, action: Action) -> Result<String> {
+    fn transform_message(&self,
+                         message: &String,
+                         keytext: &String,
+                         action: Action)
+                         -> Result<String> {
         let key: Vec<EncodeNum> = try!(self.vectorize_string(keytext));
         let keysize = key.len();
         let transformed_chars: Vec<char> = try!(message.chars()
@@ -133,7 +136,7 @@ impl Encoding {
                        cipher_num);
                 self.number_to_char(&cipher_num)
             })
-        .collect());
+            .collect());
         let new_message: String = transformed_chars.iter().map(|c| *c).collect();
         Ok(new_message)
     }

@@ -13,7 +13,10 @@ fn string_to_char(s: &String) -> Result<char> {
     match s.len() {
         0 => Err(ConfigError::ValueNotChar(format!("Can not get char from empty string"))),
         1 => Ok(s.chars().nth(0).unwrap()),
-        _ => Err(ConfigError::ValueNotChar(format!("String '{}' is more than just a single char", s))),
+        _ => {
+            Err(ConfigError::ValueNotChar(format!("String '{}' is more than just a single char",
+                                                  s)))
+        }
     }
 }
 
@@ -31,8 +34,8 @@ fn parse_alphabet(root_table: &Table) -> Result<Vec<char>> {
         Some(&Value::Array(ref abc)) => Some(abc),
         Some(x) => {
             return Err(ConfigError::SchemaError(format!("Key '{}' did not have Array: {:?}",
-                                                    ALPHABET_KEY,
-                                                    x)))
+                                                        ALPHABET_KEY,
+                                                        x)))
         }
         None => None,
     };
@@ -55,8 +58,8 @@ fn parse_mapping(root_table: &Table) -> Result<Vec<(char, char)>> {
         Some(&Value::Table(ref mapping)) => Some(mapping),
         Some(x) => {
             return Err(ConfigError::SchemaError(format!("Key '{}' did not have Table: {:?}",
-                                                    MAPPING_KEY,
-                                                    x)))
+                                                        MAPPING_KEY,
+                                                        x)))
         }
         None => None,
     };
