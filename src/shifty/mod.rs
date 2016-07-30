@@ -6,6 +6,7 @@ mod parser;
 
 pub use self::encoding::Encoding;
 pub use self::error::Error;
+pub use self::error::ConfigError;
 
 
 

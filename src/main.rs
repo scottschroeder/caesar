@@ -50,7 +50,6 @@ const ALPHANUMERIC: &'static str = r#"
 
 fn alphanumeric() -> Encoding {
     let alphanumeric_encoding: Encoding = Encoding::parse(ALPHANUMERIC).unwrap();
-    println!("Alphanumeric Encoding {:?}", alphanumeric_encoding);
     alphanumeric_encoding
 }
 
@@ -64,11 +63,11 @@ fn main() {
     let k: String = "This is a key".to_string();
     let message = encoding.map_filter_string(&s);
     let keytext = encoding.map_filter_string(&k);
-    println!("Message {}", message);
-    println!("Key {}", keytext);
-    let ciphertext = encoding.encrypt(&message, &keytext);
-    println!("Ciphertext {}", ciphertext);
-    let plaintext = encoding.decrypt(&ciphertext, &keytext);
-    println!("Plaintext {}", plaintext);
+    println!("Message: {}", message);
+    println!("Key: {}", keytext);
+    let ciphertext = encoding.encrypt(&message, &keytext).unwrap();
+    println!("Ciphertext: {}", ciphertext);
+    let plaintext = encoding.decrypt(&ciphertext, &keytext).unwrap();
+    println!("Plaintext: {}", plaintext);
 
 }

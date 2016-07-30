@@ -15,7 +15,7 @@ enum Action {
 custom_derive! {
     #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
     #[derive(NewtypeFrom, NewtypeAdd, NewtypeSub, NewtypeRem)]
-    struct EncodeNum(u64);
+    pub struct EncodeNum(u64);
 }
 
 impl fmt::Display for EncodeNum {
@@ -84,39 +84,46 @@ impl Encoding {
         self.char_number_map.contains_key(c)
     }
 
-    fn char_to_number(&self, c: &char) -> EncodeNum {
-        *self.char_number_map.get(c).unwrap()
+    fn char_to_number(&self, c: &char) -> Result<EncodeNum> {
+        //*self.char_number_map.get(c).unwrap()
+        match self.char_number_map.get(c) {
+            Some(n) => Ok(*n),
+            None => Err(Error::CharNotInEncoding(*c))
+        }
     }
 
-    fn number_to_char(&self, n: &EncodeNum) -> char {
-        *self.number_char_map.get(n).unwrap()
+    fn number_to_char(&self, n: &EncodeNum) -> Result<char> {
+        match self.number_char_map.get(n) {
+            Some(c) => Ok(*c),
+            None => Err(Error::NumberNotInEncoding(*n))
+        }
     }
 
     fn map_char(&self, c: &char) -> char {
         *self.char_char_map.get(c).unwrap_or(c)
     }
 
-    fn vectorize_string(&self, s: &String) -> Vec<EncodeNum> {
+    fn vectorize_string(&self, s: &String) -> Result<Vec<EncodeNum>> {
         s.chars()
             .map(|c| self.char_to_number(&c))
             .collect()
     }
 
-    pub fn encrypt(&self, message: &String, keytext: &String) -> String {
+    pub fn encrypt(&self, message: &String, keytext: &String) -> Result<String> {
         self.transform_message(message, keytext, Action::Encrypt)
     }
 
-    pub fn decrypt(&self, message: &String, keytext: &String) -> String {
+    pub fn decrypt(&self, message: &String, keytext: &String) -> Result<String> {
         self.transform_message(message, keytext, Action::Decrypt)
     }
 
-    fn transform_message(&self, message: &String, keytext: &String, action: Action) -> String {
-        let key: Vec<EncodeNum> = self.vectorize_string(keytext);
+    fn transform_message(&self, message: &String, keytext: &String, action: Action) -> Result<String> {
+        let key: Vec<EncodeNum> = try!(self.vectorize_string(keytext));
         let keysize = key.len();
-        message.chars()
+        let transformed_chars: Vec<char> = try!(message.chars()
             .enumerate()
             .map(|(i, c)| {
-                let message_num: EncodeNum = self.char_to_number(&c);
+                let message_num: EncodeNum = try!(self.char_to_number(&c));
                 let key_num: EncodeNum = key[i % keysize];
                 let cipher_num = transform(&message_num, &key_num, &self.size, &action);
                 trace!("message_num: {:?} key_num: {:?} {:?} -> {:?}",
@@ -126,7 +133,9 @@ impl Encoding {
                        cipher_num);
                 self.number_to_char(&cipher_num)
             })
-            .join("")
+        .collect());
+        let new_message: String = transformed_chars.iter().map(|c| *c).collect();
+        Ok(new_message)
     }
 
     pub fn map_string(&self, s: &String) -> String {
@@ -189,14 +198,14 @@ fn translate_with_map() {
 fn encode() {
     let mut e = Encoding::new();
     e.insert_char('a');
-    assert_eq!(e.char_to_number(&'a'), EncodeNum(0))
+    assert_eq!(e.char_to_number(&'a').unwrap(), EncodeNum(0))
 }
 
 #[test]
 fn decode() {
     let mut e = Encoding::new();
     e.insert_char('a');
-    assert_eq!(e.number_to_char(&EncodeNum(0)), 'a')
+    assert_eq!(e.number_to_char(&EncodeNum(0)).unwrap(), 'a')
 }
 
 #[test]
@@ -245,8 +254,8 @@ fn transform_char_identity() {
     let k = "a".to_string();
     let c = "b".to_string();
 
-    assert_eq!(e.transform_message(&m, &k, Action::Encrypt), c);
-    assert_eq!(e.transform_message(&c, &k, Action::Decrypt), m);
+    assert_eq!(e.transform_message(&m, &k, Action::Encrypt).unwrap(), c);
+    assert_eq!(e.transform_message(&c, &k, Action::Decrypt).unwrap(), m);
 
 }
 
@@ -261,8 +270,8 @@ fn transform_char() {
     let k = "c".to_string();
     let c = "d".to_string();
 
-    assert_eq!(e.transform_message(&m, &k, Action::Encrypt), c);
-    assert_eq!(e.transform_message(&c, &k, Action::Decrypt), m);
+    assert_eq!(e.transform_message(&m, &k, Action::Encrypt).unwrap(), c);
+    assert_eq!(e.transform_message(&c, &k, Action::Decrypt).unwrap(), m);
 
 }
 
@@ -277,8 +286,8 @@ fn encrypt_decrypt() {
     let k = "bad".to_string();
     let c = "bdc".to_string();
 
-    assert_eq!(e.encrypt(&m, &k), c);
-    assert_eq!(e.decrypt(&c, &k), m);
+    assert_eq!(e.encrypt(&m, &k).unwrap(), c);
+    assert_eq!(e.decrypt(&c, &k).unwrap(), m);
 }
 
 #[test]
@@ -314,14 +323,6 @@ fn parse_empty_string() {
     assert_eq!(e.char_char_map.len(), 0);
 }
 
-#[test]
-fn fail_to_parse_bad_toml() {
-    let test_string = r#"a = a"#;
-    match Encoding::parse(test_string) {
-        Ok(_) => panic!("We parsed invalid TOML!"),
-        Err(e) => assert_eq!(e, Error::InvalidToml),
-    }
-}
 
 #[test]
 fn parse_empty_alphabet() {
@@ -380,35 +381,6 @@ fn parse_single_mapping() {
 }
 
 
-#[test]
-fn fail_to_parse_bad_char_in_alphabet() {
-    let test_string = r#"
-    alphabet = ["abc"]
-    "#;
-
-    match Encoding::parse(test_string) {
-        Err(Error::NotChar(_)) => (),
-        Ok(_) => panic!("We parsed an invalid Alphabet!"),
-        Err(e) => panic!("We failed with the wrong type of error {:?}", e),
-    }
-
-}
-#[test]
-fn fail_to_parse_bad_char_in_mapping() {
-    let test_string = r#"
-    [mapping]
-    Abc = "a"
-    "#;
-
-    match Encoding::parse(test_string) {
-        Err(Error::NotChar(_)) => (),
-        Ok(_) => panic!("We parsed an invalid Mapping!"),
-        Err(e) => panic!("We failed with the wrong type of error {:?}", e),
-    }
-
-}
-
-// TODO: Test all the various types of errors that we throw
 
 #[test]
 fn parse_simple_encoding() {
