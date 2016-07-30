@@ -1,4 +1,3 @@
-#![feature(try_from)]
 #[macro_use]
 extern crate log;
 #[macro_use]
@@ -8,13 +7,13 @@ extern crate newtype_derive;
 extern crate env_logger;
 extern crate itertools;
 extern crate toml;
-mod encoding;
-use encoding::Encoding;
+mod shifty;
+use shifty::Encoding;
 
 
 
 const ALPHANUMERIC: &'static str = r#"
-        alphabet =[
+        alphabet = [
             "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
             "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", " ",
@@ -50,7 +49,7 @@ const ALPHANUMERIC: &'static str = r#"
 
 
 fn alphanumeric() -> Encoding {
-    let alphanumeric_encoding: Encoding = Encoding::new_from_toml_string(ALPHANUMERIC);
+    let alphanumeric_encoding: Encoding = Encoding::parse(ALPHANUMERIC).unwrap();
     println!("Alphanumeric Encoding {:?}", alphanumeric_encoding);
     alphanumeric_encoding
 }
