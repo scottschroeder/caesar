@@ -93,6 +93,7 @@ pub fn new_from_toml(root_table: Table) -> super::Result<Encoding> {
         new_encoding.insert_map(pre_char, post_char);
     }
 
+    debug!("Encoding: {:?}", new_encoding);
     Ok(new_encoding)
 }
 

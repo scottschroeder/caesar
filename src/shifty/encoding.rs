@@ -29,19 +29,12 @@ fn transform(message: &EncodeNum, key: &EncodeNum, size: &usize, action: &Action
     let s = *size as i32;
     let m = message.0 as i32;
     let k = key.0 as i32;
-    let c = match *action {
-        Action::Encrypt => m + k,
-        Action::Decrypt => m - k,
+    let offset: i32 = match *action {
+        Action::Encrypt => k,
+        Action::Decrypt => -k,
     };
-    let cipher_num = if c < 0 {
-        c + s
-    } else if c >= s {
-        c % s
-    } else {
-        c
-    };
-
-    EncodeNum(cipher_num as u64)
+    let c = (m + offset + s) % s;
+    EncodeNum(c as u64)
 }
 
 
@@ -71,6 +64,7 @@ impl Encoding {
 
     pub fn insert_char(&mut self, c: char) {
         let map_number = EncodeNum(self.size as u64);
+        trace!("Encode {} -> {}", c, map_number);
         self.char_number_map.insert(c, map_number);
         self.number_char_map.insert(map_number, c);
         self.size += 1;
@@ -78,6 +72,7 @@ impl Encoding {
 
     pub fn insert_map(&mut self, x: char, y: char) {
         self.char_char_map.insert(x, y);
+        trace!("Map {} -> {}", x, y);
     }
 
     fn char_in_working_set(&self, c: &char) -> bool {
@@ -129,10 +124,10 @@ impl Encoding {
                 let message_num: EncodeNum = try!(self.char_to_number(&c));
                 let key_num: EncodeNum = key[i % keysize];
                 let cipher_num = transform(&message_num, &key_num, &self.size, &action);
-                trace!("message_num: {:?} key_num: {:?} {:?} -> {:?}",
+                trace!("{:?} m({}) k({}) -> c({})",
+                       action,
                        message_num,
                        key_num,
-                       action,
                        cipher_num);
                 self.number_to_char(&cipher_num)
             })
