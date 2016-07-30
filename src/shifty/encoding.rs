@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
-use toml::{self, Value, Table};
+use toml::{self, Array, Value, Table};
 use itertools::Itertools;
 use super::Result;
 use super::Error;
@@ -16,6 +16,99 @@ custom_derive! {
     #[derive(Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
     #[derive(NewtypeFrom, NewtypeAdd, NewtypeSub, NewtypeRem)]
     struct EncodeNum(u64);
+}
+
+impl fmt::Display for EncodeNum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+const ALPHABET_KEY: &'static str = "alphabet";
+const MAPPING_KEY: &'static str = "mapping";
+
+fn string_to_char(s: &String) -> Result<char> {
+    match s.len() {
+        0 => Err(Error::NotChar(format!("Can not get char from empty string"))),
+        1 => Ok(s.chars().nth(0).unwrap()),
+        _ => Err(Error::NotChar(format!("String '{}' is more than just a single char", s))),
+    }
+}
+
+fn char_from_toml_value(value: &Value) -> Result<char> {
+    match *value {
+        Value::String(ref s) => string_to_char(s),
+        ref x => Err(Error::NotChar(format!("Value {:?} is not a string type", x))),
+    }
+}
+
+
+fn parse_alphabet(root_table: &Table) -> Result<Vec<char>> {
+    // Get the array, if it exists
+    let alphabet: Option<&Array> = match root_table.get(ALPHABET_KEY) {
+        Some(&Value::Array(ref abc)) => Some(abc),
+        Some(x) => {
+            return Err(Error::InvalidConfig(format!("Key '{}' did not have Array: {:?}",
+                                                    ALPHABET_KEY,
+                                                    x)))
+        }
+        None => None,
+    };
+
+    // Transform Option(&Array) into Vec<char>
+    let chars: Vec<char> = match alphabet {
+        Some(abc) => {
+            try!(abc.iter()
+                .map(|x| char_from_toml_value(x))
+                .collect())
+        }
+        None => vec![],
+    };
+    Ok(chars)
+}
+
+fn parse_mapping(root_table: &Table) -> Result<Vec<(char, char)>> {
+
+    let user_mapping: Option<&Table> = match root_table.get(MAPPING_KEY) {
+        Some(&Value::Table(ref mapping)) => Some(mapping),
+        Some(x) => {
+            return Err(Error::InvalidConfig(format!("Key '{}' did not have Table: {:?}",
+                                                    MAPPING_KEY,
+                                                    x)))
+        }
+        None => None,
+    };
+
+
+    match user_mapping {
+        Some(char_map) => {
+            char_map.iter()
+                .map(|(pre_map, post_map)| {
+                    Ok((try!(string_to_char(pre_map)), try!(char_from_toml_value(post_map))))
+                })
+                .collect()
+        }
+        None => Ok(vec![]),
+    }
+}
+
+fn new_from_toml(root_table: Table) -> Result<Encoding> {
+    let mut new_encoding = Encoding::new();
+    trace!("Root Table: {:?}", root_table);
+
+    let chars = try!(parse_alphabet(&root_table));
+
+    for c in &chars {
+        new_encoding.insert_char(*c);
+    }
+
+    let mapping = try!(parse_mapping(&root_table));
+
+    for (pre_char, post_char) in mapping {
+        new_encoding.insert_map(pre_char, post_char);
+    }
+
+    Ok(new_encoding)
 }
 
 fn transform(message: &EncodeNum, key: &EncodeNum, size: &usize, action: &Action) -> EncodeNum {
@@ -37,11 +130,6 @@ fn transform(message: &EncodeNum, key: &EncodeNum, size: &usize, action: &Action
     EncodeNum(cipher_num as u64)
 }
 
-impl fmt::Display for EncodeNum {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 
 #[derive(Debug)]
@@ -50,20 +138,6 @@ pub struct Encoding {
     number_char_map: HashMap<EncodeNum, char>,
     char_char_map: HashMap<char, char>,
     size: usize,
-}
-
-fn char_from_toml_value(value: &Value) -> Result<char> {
-    match *value {
-        Value::String(ref s) => {
-            if s.len() != 1 {
-                Err(Error::NotChar(format!("Invalid config, key 'alphabet' has bad char value '{}'", s)))
-            } else {
-                let c: char = s.chars().nth(0).unwrap();
-                Ok(c)
-            }
-        }
-        ref x => Err(Error::InvalidConfig(format!("Key 'alphabet' has non string value: {:?}", x)))
-    }
 }
 
 impl Encoding {
@@ -78,7 +152,7 @@ impl Encoding {
 
     pub fn parse(toml: &str) -> Result<Encoding> {
         let root_table: Table = toml::Parser::new(toml).parse().unwrap();
-        Encoding::new_from_toml(root_table)
+        new_from_toml(root_table)
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -87,39 +161,6 @@ impl Encoding {
         self.number_char_map.insert(map_number, c);
         self.size += 1;
     }
-
-    pub fn new_from_toml(root_table: toml::Table) -> Result<Encoding> {
-        let mut new_encoding = Self::new();
-        trace!("Root Table: {:?}", root_table);
-        let alphabet = match root_table.get("alphabet") {
-            Some(&Value::Array(ref abc)) => abc,
-            _ => return Err(Error::InvalidConfig("Invaid config, key 'alphabet' did not have array.".to_string())),
-        };
-
-        // TODO: This seems like the wrong way to do this
-        let chars_result: Result<Vec<char>> = alphabet.iter()
-            .map(|x| char_from_toml_value(x))
-            .collect();
-        let chars = try!(chars_result);
-
-        for c in &chars {
-            new_encoding.insert_char(*c);
-        }
-
-        let char_mapping = match root_table.get("mapping") {
-            Some(&Value::Table(ref mapping)) => mapping,
-            _ => return Err(Error::InvalidConfig("Invaid config, key 'mapping' did not have Table.".to_string())),
-        };
-        trace!("char mapping: {:?}", char_mapping);
-        for (pre_map, post_map) in char_mapping {
-            let pre_char = pre_map.chars().nth(0).unwrap();
-            let post_char = try!(char_from_toml_value(post_map));
-            new_encoding.insert_map(pre_char, post_char);
-        }
-
-        Ok(new_encoding)
-    }
-
 
     pub fn insert_map(&mut self, x: char, y: char) {
         self.char_char_map.insert(x, y);
@@ -346,3 +387,47 @@ fn filter_string() {
     let post = "b".to_string();
     assert_eq!(e.filter_string(&pre), post);
 }
+
+#[test]
+fn parse_empty_string() {
+
+    let test_string = r#""#;
+
+    let e = Encoding::parse(test_string).unwrap();
+    assert_eq!(e.size, 0);
+    assert_eq!(e.char_number_map.len(), 0);
+    assert_eq!(e.number_char_map.len(), 0);
+    assert_eq!(e.char_char_map.len(), 0);
+}
+
+#[test]
+fn parse_bad_toml() {
+
+    let test_string = r#"a = a"#;
+
+    let e = Encoding::parse(test_string).unwrap();
+    assert_eq!(e.size, 0);
+    assert_eq!(e.char_number_map.len(), 0);
+    assert_eq!(e.number_char_map.len(), 0);
+    assert_eq!(e.char_char_map.len(), 0);
+}
+
+#[test]
+fn parse_empty_alphabet() {
+
+    let test_string = r#"
+        alphabet = []
+    "#;
+
+    let e = Encoding::parse(test_string).unwrap();
+    assert_eq!(e.size, 0);
+    assert_eq!(e.char_number_map.len(), 0);
+    assert_eq!(e.number_char_map.len(), 0);
+    assert_eq!(e.char_char_map.len(), 0);
+}
+// let test_string = r#"
+// alphabet = []
+// [mapping]
+// "#;
+//
+//
