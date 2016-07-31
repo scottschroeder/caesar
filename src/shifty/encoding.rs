@@ -7,7 +7,7 @@ use super::parser;
 
 
 #[derive(Debug)]
-enum Action {
+pub enum Action {
     Encrypt,
     Decrypt,
 }
@@ -97,25 +97,25 @@ impl Encoding {
         *self.char_char_map.get(c).unwrap_or(c)
     }
 
-    fn vectorize_string(&self, s: &String) -> Result<Vec<EncodeNum>> {
+    fn vectorize_string(&self, s: &str) -> Result<Vec<EncodeNum>> {
         s.chars()
             .map(|c| self.char_to_number(&c))
             .collect()
     }
 
-    pub fn encrypt(&self, message: &String, keytext: &String) -> Result<String> {
+    pub fn encrypt(&self, message: &str, keytext: &str) -> Result<String> {
         self.transform_message(message, keytext, Action::Encrypt)
     }
 
-    pub fn decrypt(&self, message: &String, keytext: &String) -> Result<String> {
+    pub fn decrypt(&self, message: &str, keytext: &str) -> Result<String> {
         self.transform_message(message, keytext, Action::Decrypt)
     }
 
-    fn transform_message(&self,
-                         message: &String,
-                         keytext: &String,
-                         action: Action)
-                         -> Result<String> {
+    pub fn transform_message(&self,
+                             message: &str,
+                             keytext: &str,
+                             action: Action)
+                             -> Result<String> {
         let key: Vec<EncodeNum> = try!(self.vectorize_string(keytext));
         let keysize = key.len();
         let transformed_chars: Vec<char> = try!(message.chars()
@@ -136,19 +136,19 @@ impl Encoding {
         Ok(new_message)
     }
 
-    pub fn map_string(&self, s: &String) -> String {
+    pub fn map_string(&self, s: &str) -> String {
         s.chars()
             .map(|c| self.map_char(&c))
             .join("")
     }
 
-    pub fn filter_string(&self, s: &String) -> String {
+    pub fn filter_string(&self, s: &str) -> String {
         s.chars()
             .filter(|c| self.char_in_working_set(&c))
             .join("")
     }
 
-    pub fn map_filter_string(&self, s: &String) -> String {
+    pub fn map_filter_string(&self, s: &str) -> String {
         let mapped_string = self.map_string(s);
         let filtered_string = self.filter_string(&mapped_string);
         filtered_string

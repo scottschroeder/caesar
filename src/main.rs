@@ -9,8 +9,11 @@ extern crate itertools;
 extern crate toml;
 extern crate clap;
 mod shifty;
-use shifty::Encoding;
-use clap::{Arg, ArgGroup, App, SubCommand};
+use std::error;
+use shifty::{Action, Encoding};
+use clap::{Arg, ArgMatches, ArgGroup, App, SubCommand};
+
+pub type Result<T> = std::result::Result<T, Box<error::Error>>;
 
 #[allow(dead_code)]
 fn shut_up_dead_code() {
@@ -24,41 +27,21 @@ fn shut_up_dead_code() {
     Encoding::parse(test_string).unwrap();
 }
 
-fn text_key_args<'a>(app: App<'a, 'a>, action: &str) -> App<'a, 'a> {
-
-        app.arg(Arg::with_name("keystring")
-            .short("k")
-            .long("key")
-            .value_name("KEYSTRING")
-            .takes_value(true)
-            .help("The secret key"))
-        .arg(Arg::with_name("keyfile")
-            .long("key-file")
-            .value_name("KEYFILE")
-            .takes_value(true)
-            .help("Path to file with secret key"))
-        .group(ArgGroup::with_name("key_source")
-            .arg("keystring")
-            .arg("keyfile")
-            .required(true))
-        .arg(Arg::with_name("inputstring")
-            .short("i")
-            .long("input")
-            .takes_value(true)
-            .help(&format!("The text to be {}", action)))
-        .arg(Arg::with_name("inputfile")
-            .long("input-file")
-            .takes_value(true)
-            .help(&format!("Path to file with text to be {}", action)))
-        .group(ArgGroup::with_name("input_source")
-            .arg("inputstring")
-            .arg("inputfile")
-            .required(true))
+fn transcode(action: Action, cmd: &ArgMatches) -> Result<()> {
+    debug!("Running {:?} -> {:?}\n", action, cmd);
+    let encoding = shifty::alphanumeric_space();
+    let keytext = cmd.value_of("keystring").unwrap();
+    let input = cmd.value_of("inputstring").unwrap();
+    println!("Input: {}", input);
+    println!("Key: {}", keytext);
+    let output = try!(encoding.transform_message(input, keytext, action));
+    println!("Output: {}", output);
+    Ok(())
 }
 
 fn main() {
     env_logger::init().unwrap();
-    let mut app = App::new("caesar")
+    let cli_context = App::new("caesar")
         .version("0.1.0")
         .author("Scott Schroeder <scott19904@gmail.com>")
         .about("A CLI tool for working with the Vigenère cipher.")
@@ -66,21 +49,76 @@ fn main() {
             .short("v")
             .multiple(true)
             .help("Sets the level of verbosity"))
-        .subcommand(SubCommand::with_name("test")
-            .about("controls testing features")
-            .version("1.3")
-            .author("Someone E. <someone_else@other.com>")
-            .arg(Arg::with_name("debug")
-                .short("d")
-                .help("print debug information verbosely")));
-    app = text_key_args(app, "encrypted");
+        .subcommand(SubCommand::with_name("encrypt")
+            .arg(Arg::with_name("keystring")
+                .short("k")
+                .long("key")
+                .value_name("KEYSTRING")
+                .takes_value(true)
+                .help("The secret key"))
+            .arg(Arg::with_name("keyfile")
+                .long("key-file")
+                .value_name("KEYFILE")
+                .takes_value(true)
+                .help("Path to file with secret key"))
+            .group(ArgGroup::with_name("key_source")
+                .arg("keystring")
+                .arg("keyfile")
+                .required(true))
+            .arg(Arg::with_name("inputstring")
+                .short("i")
+                .long("input")
+                .takes_value(true)
+                .help("Text to be encrypted"))
+            .arg(Arg::with_name("inputfile")
+                .long("input-file")
+                .takes_value(true)
+                .help("Path to file with text to be encrypted"))
+            .group(ArgGroup::with_name("input_source")
+                .arg("inputstring")
+                .arg("inputfile")
+                .required(true)))
+        .subcommand(SubCommand::with_name("decrypt")
+            .arg(Arg::with_name("keystring")
+                .short("k")
+                .long("key")
+                .value_name("KEYSTRING")
+                .takes_value(true)
+                .help("The secret key"))
+            .arg(Arg::with_name("keyfile")
+                .long("key-file")
+                .value_name("KEYFILE")
+                .takes_value(true)
+                .help("Path to file with secret key"))
+            .group(ArgGroup::with_name("key_source")
+                .arg("keystring")
+                .arg("keyfile")
+                .required(true))
+            .arg(Arg::with_name("inputstring")
+                .short("i")
+                .long("input")
+                .takes_value(true)
+                .help("Text to be decrypted"))
+            .arg(Arg::with_name("inputfile")
+                .long("input-file")
+                .takes_value(true)
+                .help("Path to file with text to be decrypted"))
+            .group(ArgGroup::with_name("input_source")
+                .arg("inputstring")
+                .arg("inputfile")
+                .required(true)))
+        .get_matches();
 
-    let matches = app.get_matches();
-    println!("{:?}", matches);
+    // debug!("{:?}", cli_context);
+
+    let result = match cli_context.subcommand() {
+        ("encrypt", Some(cmd)) => transcode(Action::Encrypt, cmd),
+        ("decrypt", Some(cmd)) => transcode(Action::Decrypt, cmd),
+        _ => Err(From::from("Could not determine command to run!")),
+    };
+
+    println!("Execution ended: {:?}", result);
     return;
-
-
-
 
 
 
