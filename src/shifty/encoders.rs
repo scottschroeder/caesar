@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::Encoding;
 
 fn add_num(e: &mut Encoding) {
@@ -16,6 +17,7 @@ fn add_space(e: &mut Encoding) {
     e.insert_char(' ');
 }
 
+#[allow(non_snake_case)]
 fn map_AZ(e: &mut Encoding) {
     for i in 0..26 {
         e.insert_map(char_num('A', i), char_num('a', i));

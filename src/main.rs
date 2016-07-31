@@ -7,14 +7,25 @@ extern crate newtype_derive;
 extern crate env_logger;
 extern crate itertools;
 extern crate toml;
+extern crate clap;
 mod shifty;
 use shifty::Encoding;
 
-
+fn shut_up_dead_code() {
+    let test_string = r#"
+    alphabet = ["a", "b", "c"]
+    [mapping]
+    A = "a"
+    B = "b"
+    C = "c"
+    "#;
+    Encoding::parse(test_string).unwrap();
+}
 
 
 fn main() {
     env_logger::init().unwrap();
+	shut_up_dead_code();
 
     let encoding = shifty::alphanumeric_space();
 
