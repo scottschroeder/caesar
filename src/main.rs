@@ -114,10 +114,18 @@ fn main() {
     let result = match cli_context.subcommand() {
         ("encrypt", Some(cmd)) => transcode(Action::Encrypt, cmd),
         ("decrypt", Some(cmd)) => transcode(Action::Decrypt, cmd),
-        _ => Err(From::from("Could not determine command to run!")),
+        (unkown_cmd, Some(cmd)) => panic!("Unknown command '{}'", unkown_cmd),
+        _ => {
+            println!("{}", cli_context.usage());
+            println!("Run with '-h' or '--help' for more information.");
+            Ok(())
+        }
     };
 
-    println!("Execution ended: {:?}", result);
+    match result {
+        Ok(_) => (),
+        Err(e) => println!("Encountered an error: {}", e),
+    }
     return;
 
 

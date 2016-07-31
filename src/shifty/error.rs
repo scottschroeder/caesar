@@ -18,7 +18,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::InvalidConfig(ref err) => write!(f, "{}", err),
-            Error::CharNotInEncoding(c) => write!(f, "Char {} not in encoding", c),
+            Error::CharNotInEncoding(c) => write!(f, "Char '{}' not in encoding", c),
             Error::NumberNotInEncoding(n) => write!(f, "Number {:?} not in encoding", n),
         }
     }
