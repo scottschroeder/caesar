@@ -64,7 +64,7 @@ impl Encoding {
 
     pub fn insert_char(&mut self, c: char) {
         let map_number = EncodeNum(self.size as u64);
-        trace!("Encode {} -> {}", c, map_number);
+        trace!("Encode {:?} -> {}", c, map_number);
         self.char_number_map.insert(c, map_number);
         self.number_char_map.insert(map_number, c);
         self.size += 1;
@@ -72,7 +72,7 @@ impl Encoding {
 
     pub fn insert_map(&mut self, x: char, y: char) {
         self.char_char_map.insert(x, y);
-        trace!("Map {} -> {}", x, y);
+        trace!("Map {:?} -> {:?}", x, y);
     }
 
     fn char_in_working_set(&self, c: &char) -> bool {

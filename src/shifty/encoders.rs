@@ -24,6 +24,11 @@ fn map_AZ(e: &mut Encoding) {
     }
 }
 
+fn map_whitespace(e: &mut Encoding) {
+    e.insert_map('\n', ' ');
+    e.insert_map('\t', ' ');
+}
+
 fn char_num(base: char, offset: u8) -> char {
     (offset + base as u8) as char
 }
@@ -42,6 +47,7 @@ pub fn alphanumeric_space() -> Encoding {
     map_AZ(&mut e);
     add_num(&mut e);
     add_space(&mut e);
+    map_whitespace(&mut e);
     e
 }
 
@@ -57,5 +63,6 @@ pub fn alpha_space() -> Encoding {
     add_az(&mut e);
     map_AZ(&mut e);
     add_space(&mut e);
+    map_whitespace(&mut e);
     e
 }

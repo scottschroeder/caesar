@@ -34,7 +34,7 @@ fn transcode(action: Action, cmd: &ArgMatches) -> Result<()> {
     let encoding = shifty::alphanumeric_space();
 
 
-    let keytext = if cmd.is_present("keystring") {
+    let mut key = if cmd.is_present("keystring") {
         cmd.value_of("keystring").unwrap().to_string()
     } else if cmd.is_present("keyfile") {
         let raw_path = cmd.value_of("keyfile").unwrap();
@@ -44,7 +44,7 @@ fn transcode(action: Action, cmd: &ArgMatches) -> Result<()> {
         panic!("Attempted to transcode without either keystring or keyfile set!")
     };
 
-    let input = if cmd.is_present("inputstring") {
+    let mut input = if cmd.is_present("inputstring") {
         cmd.value_of("inputstring").unwrap().to_string()
     } else if cmd.is_present("inputfile") {
         let raw_path = cmd.value_of("inputfile").unwrap();
@@ -54,9 +54,15 @@ fn transcode(action: Action, cmd: &ArgMatches) -> Result<()> {
         panic!("Attempted to transcode without either inputstring or inputfile set!")
     };
 
+
+    if !cmd.is_present("strict") {
+        key = encoding.map_filter_string(&key);
+        input = encoding.map_filter_string(&input);
+    }
+
     info!("Input: {}", input);
-    info!("Key: {}", keytext);
-    let output = try!(encoding.transform_message(&input, &keytext, action));
+    info!("Key: {}", key);
+    let output = try!(encoding.transform_message(&input, &key, action));
     println!("{}", output);
     Ok(())
 }
@@ -96,6 +102,9 @@ fn main() {
                 .long("input-file")
                 .takes_value(true)
                 .help("Path to file with text to be encrypted"))
+            .arg(Arg::with_name("strict")
+                .long("strict")
+                .help("Fail if unknown characters are encountered"))
             .group(ArgGroup::with_name("input_source")
                 .arg("inputstring")
                 .arg("inputfile")
@@ -129,6 +138,9 @@ fn main() {
                 .arg("inputstring")
                 .arg("inputfile")
                 .required(true)))
+            .arg(Arg::with_name("strict")
+                .long("strict")
+                .help("Fail if unknown characters are encountered"))
         .get_matches();
 
     // debug!("{:?}", cli_context);
