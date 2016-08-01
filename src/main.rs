@@ -1,3 +1,4 @@
+#![feature(box_syntax)]
 #[macro_use]
 extern crate log;
 #[macro_use]
@@ -9,6 +10,7 @@ extern crate itertools;
 extern crate toml;
 extern crate clap;
 mod shifty;
+mod util;
 use std::error;
 use shifty::{Action, Encoding};
 use clap::{Arg, ArgMatches, ArgGroup, App, SubCommand};
@@ -30,12 +32,32 @@ fn shut_up_dead_code() {
 fn transcode(action: Action, cmd: &ArgMatches) -> Result<()> {
     debug!("Running {:?} -> {:?}\n", action, cmd);
     let encoding = shifty::alphanumeric_space();
-    let keytext = cmd.value_of("keystring").unwrap();
-    let input = cmd.value_of("inputstring").unwrap();
-    println!("Input: {}", input);
-    println!("Key: {}", keytext);
-    let output = try!(encoding.transform_message(input, keytext, action));
-    println!("Output: {}", output);
+
+
+    let keytext = if cmd.is_present("keystring") {
+        cmd.value_of("keystring").unwrap().to_string()
+    } else if cmd.is_present("keyfile") {
+        let raw_path = cmd.value_of("keyfile").unwrap();
+        try!(util::read_path(raw_path))
+    } else {
+        // clap should force the user to pick one or the other
+        panic!("Attempted to transcode without either keystring or keyfile set!")
+    };
+
+    let input = if cmd.is_present("inputstring") {
+        cmd.value_of("inputstring").unwrap().to_string()
+    } else if cmd.is_present("inputfile") {
+        let raw_path = cmd.value_of("inputfile").unwrap();
+        try!(util::read_path(raw_path))
+    } else {
+        // clap should force the user to pick one or the other
+        panic!("Attempted to transcode without either inputstring or inputfile set!")
+    };
+
+    info!("Input: {}", input);
+    info!("Key: {}", keytext);
+    let output = try!(encoding.transform_message(&input, &keytext, action));
+    println!("{}", output);
     Ok(())
 }
 
@@ -114,7 +136,7 @@ fn main() {
     let result = match cli_context.subcommand() {
         ("encrypt", Some(cmd)) => transcode(Action::Encrypt, cmd),
         ("decrypt", Some(cmd)) => transcode(Action::Decrypt, cmd),
-        (unkown_cmd, Some(cmd)) => panic!("Unknown command '{}'", unkown_cmd),
+        (unkown_cmd, Some(_)) => panic!("Unknown command '{}'", unkown_cmd),
         _ => {
             println!("{}", cli_context.usage());
             println!("Run with '-h' or '--help' for more information.");
@@ -127,7 +149,6 @@ fn main() {
         Err(e) => println!("Encountered an error: {}", e),
     }
     return;
-
 
 
 
