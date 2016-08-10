@@ -1,13 +1,18 @@
 # Caesar Cipher
 
-This is a toy project to get familiar with rust, and rust tooling.
-
 _Note: this is actually the Vigenère cipher_
 
-## Requirements/Goals
+This is a toy project to get familiar with rust, and rust tooling.
+
+As such this will never be a "well designed" project, but more of
+a "kitchen sink" approach.
+
+## Caveat
+Never ever use this for anything close to security purposes.
+
+## Plan/Requirements
 * Encrypt/Decrypt plaintext into/from ciphertext
   * Support for multiple encodings
-* Perform frequency analysis to break ciphertext
 * Unix-like CLI
 * Logging
 * Complete Documentation
@@ -15,6 +20,11 @@ _Note: this is actually the Vigenère cipher_
 
 ## Current Status
 
-* Very basic encrypt/decrypt working.
-  * Only operates on `a-zA-Z`
+* CLI working with encrypt/decrypt
+* Multiple encoding support working, but not exposed to CLI
+* Docs are not complete
 
+## Future Goals
+* Perform frequency analysis to break ciphertext
+* Might make sense to break `shifty` out into a crate
+* Process data in streaming I/O, rather than loading it all into memory.
