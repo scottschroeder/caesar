@@ -136,9 +136,9 @@ fn main() {
                 .arg("inputstring")
                 .arg("inputfile")
                 .required(true)))
-            .arg(Arg::with_name("strict")
-                .long("strict")
-                .help("Fail if unknown characters are encountered"))
+        .arg(Arg::with_name("strict")
+            .long("strict")
+            .help("Fail if unknown characters are encountered"))
         .get_matches();
 
     debug!("{:?}", cli_context);
