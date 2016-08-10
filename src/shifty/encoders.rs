@@ -1,3 +1,6 @@
+//! This module has numerous helpers for creating
+//! some basic encoders.
+
 #![allow(dead_code)]
 use super::Encoding;
 

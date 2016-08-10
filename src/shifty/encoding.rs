@@ -7,6 +7,7 @@ use super::parser;
 
 
 #[derive(Debug)]
+/// Selects if shifting should be up (encrypted) or down (decrypted)
 pub enum Action {
     Encrypt,
     Decrypt,

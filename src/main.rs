@@ -1,3 +1,4 @@
+
 #![feature(box_syntax)]
 #[macro_use]
 extern crate log;
@@ -17,16 +18,13 @@ use clap::{Arg, ArgMatches, ArgGroup, App, SubCommand};
 
 pub type Result<T> = std::result::Result<T, Box<error::Error>>;
 
+/// Prevent a large amount of dead code from throwing warnings.
 #[allow(dead_code)]
-fn shut_up_dead_code() {
-    let test_string = r#"
-    alphabet = ["a", "b", "c"]
-    [mapping]
-    A = "a"
-    B = "b"
-    C = "c"
-    "#;
-    Encoding::parse(test_string).unwrap();
+fn shut_up_dead_code() -> String {
+    let test_string = "";
+    let e = Encoding::parse(test_string).unwrap();
+    e.encrypt("foo", "bar").unwrap();
+    e.decrypt("foo", "bar").unwrap()
 }
 
 fn transcode(action: Action, cmd: &ArgMatches) -> Result<()> {
@@ -71,7 +69,7 @@ fn main() {
     env_logger::init().unwrap();
     let cli_context = App::new("caesar")
         .version("0.1.0")
-        .author("Scott Schroeder <scott19904@gmail.com>")
+        .author("Scott Schroeder <scottschroeder@sent.com>")
         .about("A CLI tool for working with the Vigenère cipher.")
         .arg(Arg::with_name("v")
             .short("v")
@@ -143,7 +141,7 @@ fn main() {
                 .help("Fail if unknown characters are encountered"))
         .get_matches();
 
-    // debug!("{:?}", cli_context);
+    debug!("{:?}", cli_context);
 
     let result = match cli_context.subcommand() {
         ("encrypt", Some(cmd)) => transcode(Action::Encrypt, cmd),
@@ -160,32 +158,4 @@ fn main() {
         Ok(_) => (),
         Err(e) => println!("Encountered an error: {}", e),
     }
-    return;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    let encoding = shifty::alphanumeric_space();
-
-    let s: String = "abc Hello, World123! xyz".to_string();
-    let k: String = "This is a key".to_string();
-    let message = encoding.map_filter_string(&s);
-    let keytext = encoding.map_filter_string(&k);
-    println!("Message: {}", message);
-    println!("Key: {}", keytext);
-    let ciphertext = encoding.encrypt(&message, &keytext).unwrap();
-    println!("Ciphertext: {}", ciphertext);
-    let plaintext = encoding.decrypt(&ciphertext, &keytext).unwrap();
-    println!("Plaintext: {}", plaintext);
-
 }

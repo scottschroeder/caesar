@@ -1,3 +1,6 @@
+//! This module parses the toml config file
+//!
+
 use std;
 use toml::{self, Array, Value, Table};
 

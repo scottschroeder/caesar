@@ -23,7 +23,7 @@ pub fn read_path(raw_path: &str) -> Result<String> {
             error!("couldn't read {}: {}", display, why.description());
             return Err(box why);
         }
-        Ok(s) => (),
+        Ok(_) => (),
     }
     Ok(s.trim().to_string())
 }

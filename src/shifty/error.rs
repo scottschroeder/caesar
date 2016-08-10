@@ -1,6 +1,8 @@
 use std::error;
 use std::fmt;
 
+/// Error type for dealing with problems
+/// with the encoder.
 #[derive(PartialEq, Eq, Debug)]
 pub enum Error {
     InvalidConfig(ConfigError),
